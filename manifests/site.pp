@@ -43,6 +43,8 @@ class proxy {
 
 class install {
 	
+	class { 'epel': }	
+	
 	define yumgroup($ensure = "present", $optional = false) {
 	   case $ensure {
 		  present,installed: {
@@ -65,7 +67,6 @@ class install {
 		ensure => latest,
 		require => Exec['yum-update']
 	}
-	
 
 }
 
