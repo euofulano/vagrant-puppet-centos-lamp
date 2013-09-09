@@ -40,3 +40,41 @@ class proxy {
 	
 	applyproxy {$config_proxys:}	
 }
+
+class install {
+	
+	define yumgroup($ensure = "present", $optional = false) {
+	   case $ensure {
+		  present,installed: {
+			 $pkg_types_arg = $optional ? {
+				true => "--setopt=group_package_types=optional,default,mandatory",
+				default => ""
+			 }
+			 exec { "Installing $name yum group":
+				command => "yum -y groupinstall $pkg_types_arg $name",
+				unless => "yum -y groupinstall $pkg_types_arg $name --downloadonly",
+				timeout => 600,
+			 }
+		  }
+	   }
+	}
+	
+	yumgroup { '"Development tools"': }
+	
+	package {['vim-enhanced', 'vim-common', 'vim-minimal', 'telnet','zip','unzip','git','nodejs','npm','upstart', 'zlib-devel', 'lynx', 'sendmail', 'sendmail-cf']:
+		ensure => latest,
+		require => Exec['yum-update']
+	}
+	
+
+}
+
+class {'cntlm': 
+	# Força a execução do cntlm antes de todos as outras tarefas
+	stage => setup
+}
+
+class {'install':}
+
+
+
