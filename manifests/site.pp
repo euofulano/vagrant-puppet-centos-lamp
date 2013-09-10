@@ -56,9 +56,32 @@ class proxy {
 	applyproxy {$config_proxys:}	
 }
 
-class install {
-	
-	
+class iptables {
+	package { "iptables":
+		ensure => present
+	}
+
+	service { "iptables":
+		require => Package["iptables"],
+		hasstatus => true,
+		status => "true",
+		hasrestart => false,
+	}
+
+	file { "/etc/sysconfig/iptables":
+		owner   => "root",
+		group   => "root",
+		mode    => 600,
+		replace => true,
+		ensure  => present,
+		source  => "/vagrant/files/iptables.txt",
+		require => Package["iptables"],
+		notify  => Service["iptables"],
+	}
+}
+
+class setup {
+		
 	define yumgroup($ensure = "present", $optional = false) {
 	   case $ensure {
 		  present,installed: {
@@ -74,6 +97,8 @@ class install {
 		  }
 	   }
 	}
+	
+	# include iptables
 	
 	exec { 'yum-update':
 		command => '/usr/bin/yum -y update',
@@ -92,7 +117,6 @@ class install {
 		ensure => latest,
 		require => Exec['yum-update']
 	}
-
 }
 
 class {'proxy': 
@@ -100,7 +124,15 @@ class {'proxy':
 	stage => setup
 }
 
-include install
+include setup
+
+class {'apache': }
+
+apache::dotconf { 'custom':
+  content => 'EnableSendfile Off',
+}
+
+apache::module {'rewrite': }
 
 
 
