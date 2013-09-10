@@ -4,6 +4,10 @@ Exec {
     path => [ "/bin/", "/sbin/" , "/usr/bin/", "/usr/sbin/" ]
 }
 
+File {
+	mode => '0644'
+}
+
 class proxy {
 	$proxy_username = 't31291157816'
 	$proxy_domain = 'DASA'
@@ -34,6 +38,17 @@ class proxy {
 		creates => "/etc/cntlm.conf"
 	}
 	
+	file { '/etc/cntlm.conf':
+		mode => '0644',
+		owner   => "root",
+		group   => "root",
+		ensure => present,
+		replace => true,
+		require => Exec['install-cntlm'],
+		notify => Service['cntlmd'],
+		content => template("/vagrant/templates/cntlm/cntlm.conf.erb")
+	}
+	
 	service { 'cntlmd':
 		ensure => 'running'
 	}
@@ -43,7 +58,6 @@ class proxy {
 
 class install {
 	
-	class { 'epel': }	
 	
 	define yumgroup($ensure = "present", $optional = false) {
 	   case $ensure {
@@ -61,21 +75,32 @@ class install {
 	   }
 	}
 	
-	yumgroup { '"Development tools"': }
+	exec { 'yum-update':
+		command => '/usr/bin/yum -y update',
+		require => Class["epel"],
+		timeout => 60,
+		tries   => 3
+	}
 	
-	package {['vim-enhanced', 'vim-common', 'vim-minimal', 'telnet','zip','unzip','git','nodejs','npm','upstart', 'zlib-devel', 'lynx', 'sendmail', 'sendmail-cf']:
+	class { 'epel': }
+	
+	yumgroup { ['"Development tools"', '"Development Libraries"']:
+		require => Exec['yum-update']
+	}
+	
+	package {['vim-enhanced', 'vim-common', 'vim-minimal', 'telnet','zip','unzip','git','nodejs','npm','upstart', 'zlib-devel', 'lynx']:
 		ensure => latest,
 		require => Exec['yum-update']
 	}
 
 }
 
-class {'cntlm': 
+class {'proxy': 
 	# Força a execução do cntlm antes de todos as outras tarefas
 	stage => setup
 }
 
-class {'install':}
+include install
 
 
 
