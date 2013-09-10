@@ -119,20 +119,83 @@ class setup {
 	}
 }
 
+class install_apache {
+	include apache
+	
+	apache::dotconf { 'custom':
+	  content => 'EnableSendfile Off',
+	}
+	
+}
+
+class install_php {
+	include php
+	
+	php::module{
+		[
+			'bcmath', 
+			'cli', 
+			'common',
+			'devel',
+			'dba',
+			'fpm',
+			'gd',
+			'imap',
+			'intl',
+			'ldap',
+			'mbstring',
+			'mcrypt',
+			'mssql',
+			'mysql',
+			'pdo',
+			'pgsql',
+			'process',
+			'pspell',
+			'recode',
+			'snmp',
+			'soap',
+			'xml',
+			'xmlrpc'
+		]:
+	}
+	
+	file { "/var/www/html/phpinfo.php":
+		owner   => "root",
+		group   => "root",
+		mode    => 644,
+		replace => true,
+		ensure  => present,
+		content => '<?php phpinfo(); ?>',
+		require => Package["php"]
+	}
+	
+	class { 'php::pear':
+	  require => Class['php'],
+	}
+	
+	php::ini { 'php':
+		value	=> [
+			'display_errors	= On',
+			'short_open_tag	= On',
+			'error_reporting = -1',
+			'memory_limit = 256M',
+			'date_timezone = America/Sao_Paulo'
+		]			
+		target  => 'php.ini',
+		service => 'httpd',
+	  }
+	
+}
+
 class {'proxy': 
 	# Força a execução do cntlm antes de todos as outras tarefas
 	stage => setup
 }
 
 include setup
+include install_apache
+include install_php
 
-class {'apache': }
-
-apache::dotconf { 'custom':
-  content => 'EnableSendfile Off',
-}
-
-apache::module {'rewrite': }
 
 
 
