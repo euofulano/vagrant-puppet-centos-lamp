@@ -55,11 +55,9 @@ class proxy {
 	
 	applyproxy {$config_proxys: }	
 	
-	# exporta os proxy nas variaveis de ambiente pois na primeira vez não lê o que foi definido no arquivo profile
-	#exec {'set_env': 
-	#	command => "export http_proxy=http://${proxy_url}:${proxy_port} https_proxy=http://${proxy_url}:${proxy_port} ftp_proxy=http://${proxy_url}:${proxy_port} HTTP_PROXY_REQUEST_FULLURI=0 HTTPS_PROXY_REQUEST_FULLURI=0",
-	#	unless => 'export | grep http'
-	#}
+	file { "/etc/profile.d/env_proxy.sh":
+		content => "export http_proxy=http://${proxy_url}:${proxy_port} https_proxy=http://${proxy_url}:${proxy_port} ftp_proxy=http://${proxy_url}:${proxy_port} HTTP_PROXY_REQUEST_FULLURI=0 HTTPS_PROXY_REQUEST_FULLURI=0"
+	}
 	
 	exec { 'foo':
 		environment => ["FOO=bar"],
