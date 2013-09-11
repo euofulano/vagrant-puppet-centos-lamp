@@ -128,6 +128,8 @@ class setup {
 		ensure => latest,
 		require => Exec['yum-update']
 	}
+	
+	include sendmail
 }
 
 class install_apache {

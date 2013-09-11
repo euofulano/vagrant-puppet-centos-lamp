@@ -19,3 +19,9 @@
 [submodule "modules/mysql"]
 	path = modules/mysql
 	url = https://github.com/example42/puppet-mysql.git
+[submodule "modules/sendmail"]
+	path = modules/sendmail
+	url = https://github.com/example42/puppet-sendmail.git
+[submodule "modules/msmtp"]
+	path = modules/msmtp
+	url = https://github.com/zylon-internet/puppet-msmtp.git
