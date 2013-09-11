@@ -155,9 +155,15 @@ class install_php {
 			'snmp',
 			'soap',
 			'xml',
-			'xmlrpc'
+			'xmlrpc',
+			'pecl-memcache',
+			'pecl-xdebug',
+			'pecl-apc'
 		]:
 	}
+	
+	# pacotes extras
+	# package {['uuid-php', 'php-pecl-memcache', 'php-pecl-xdebug', 'php-pecl-apc']:}
 	
 	file { "/var/www/html/phpinfo.php":
 		owner   => "root",
@@ -172,25 +178,115 @@ class install_php {
 	class { 'php::pear':
 	  require => Class['php'],
 	}
+	  
+	# Set development values to our php.ini and xdebug.ini
+	augeas { 'set-php-ini-values':
+		context => '/files/etc/php.ini',
+		changes => [
+			'set PHP/error_reporting -1',
+			'set PHP/display_errors On',
+			'set PHP/display_startup_errors On',
+			'set PHP/html_errors On',
+			'set Date/date.timezone America/Sao_Paulo',
+		],
+		require => Package['php'],
+		notify  => Service['httpd']
+	}
 	
-	php::ini { 'php':
-		value	=> [
-			'display_errors	= On',
-			'short_open_tag	= On',
-			'error_reporting = -1',
-			'memory_limit = 256M',
-			'date_timezone = America/Sao_Paulo'
-		]			
-		target  => 'php.ini',
-		service => 'httpd',
-	  }
+	# Instalação e configuração do pear
+	php::pear::config { http_proxy: value => "localhost:3128" }
+	php::pear::config { auto_discover: value => "1" }
+	
+	exec { '/usr/bin/pear upgrade pear':
+		require => [
+			Package['php-pear'],
+			Exec['pear-config-set-http_proxy']
+		],
+	}
+	
+	# Atualiza os repositórios pear
+	define discoverPearChannel {
+		exec { "/usr/bin/pear channel-discover $name":
+			onlyif => "/usr/bin/pear channel-info $name | grep \"Unknown channel\"",
+			require => Exec['/usr/bin/pear upgrade pear']
+		}
+	}
+	
+	discoverPearChannel { 'pear.phpunit.de': }	
+	discoverPearChannel { 'pecl.php.net': }
+	discoverPearChannel { 'components.ez.no': }
+	discoverPearChannel { 'pear.symfony-project.com': }
+	discoverPearChannel { 'pear.symfony.com': }
+	discoverPearChannel { 'pear.phpqatools.org': }
+	
+	# PHP QA Tools
+	exec { 'install_phpqatools':
+		command => '/usr/bin/pear install --alldeps pear.phpqatools.org/phpqatools',
+		unless => 'pear list -a | grep phpqatools',
+		require => [
+			Exec['/usr/bin/pear upgrade pear'],
+			Php::Pear::Config['auto_discover'],
+			DiscoverPearChannel['pear.phpqatools.org']
+		]
+	}
+	
+	#php::pear::module { 'phpqatools':
+	#	repository  => 'pear.phpqatools.org',
+	#	alldeps => 'true',
+	#	require => [
+	#		Exec['/usr/bin/pear upgrade pear'],
+	#		Php::Pear::Config['auto_discover'],
+	#		DiscoverPearChannel['pear.phpunit.de'],
+	#		DiscoverPearChannel['components.ez.no'],
+	#		DiscoverPearChannel['pear.symfony-project.com'],
+	#		DiscoverPearChannel['pear.symfony.com'],
+	#		DiscoverPearChannel['pear.phpqatools.org']
+	#	]
+	#}
+	
+	
+	# Extensoes PEAR
+	#exec { 'install_xdebug':
+	#	command => '/usr/bin/pecl install --alldeps xdebug',
+	#	#unless => 'pear list -a | grep xdebug',
+	#	require => [
+	#		Exec['/usr/bin/pear upgrade pear'],
+	#		Php::Pear::Config['auto_discover'],
+	#		DiscoverPearChannel['pecl.php.net']
+	#	]
+	#}
+	
+	#php::pear::module {['xdebug']: 
+	#	require => [
+	#		Exec['/usr/bin/pear upgrade pear'],
+	#		Php::Pear::Config['auto_discover'],
+	#		DiscoverPearChannel['pear.phpunit.de'],
+	#		DiscoverPearChannel['components.ez.no'],
+	#		DiscoverPearChannel['pear.symfony-project.com'],
+	#		DiscoverPearChannel['pear.symfony.com'],
+	#		DiscoverPearChannel['pear.phpqatools.org']
+	#	]
+	#}
+	
+	#php::pecl::module { "xdebug": 
+	#	require => [
+	#		Exec['/usr/bin/pear upgrade pear'],
+	#		Php::Pear::Config['auto_discover'],
+	#		DiscoverPearChannel['pecl.php.net']
+	#	]	
+	#}
+	
+	# Xdebug
+	file { '/etc/php.d/xdebug.ini':
+		source => '/vagrant/files/xdebug.ini',
+		notify  => Service['httpd'],
+		require => Package['php-pecl-xdebug']
+	}
 	
 }
 
-class {'proxy': 
-	# Força a execução do cntlm antes de todos as outras tarefas
-	stage => setup
-}
+# Força a execução do cntlm antes de todos as outras tarefas
+class {'proxy': stage => setup }
 
 include setup
 include install_apache
