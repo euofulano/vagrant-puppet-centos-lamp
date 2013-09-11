@@ -53,7 +53,18 @@ class proxy {
 		ensure => 'running'
 	}
 	
-	applyproxy {$config_proxys:}	
+	applyproxy {$config_proxys: }	
+	
+	# exporta os proxy nas variaveis de ambiente pois na primeira vez não lê o que foi definido no arquivo profile
+	#exec {'set_env': 
+	#	command => "export http_proxy=http://${proxy_url}:${proxy_port} https_proxy=http://${proxy_url}:${proxy_port} ftp_proxy=http://${proxy_url}:${proxy_port} HTTP_PROXY_REQUEST_FULLURI=0 HTTPS_PROXY_REQUEST_FULLURI=0",
+	#	unless => 'export | grep http'
+	#}
+	
+	exec { 'foo':
+		environment => ["FOO=bar"],
+		command => '/bin/echo $FOO > /tmp/bar'
+	}
 }
 
 class iptables {
@@ -158,13 +169,12 @@ class install_php {
 			'xmlrpc',
 			'pecl-memcache',
 			'pecl-xdebug',
-			'pecl-apc'
+			'pecl-apc',
+			'pecl-imagick',
+			'pecl-xhprof'
 		]:
 	}
-	
-	# pacotes extras
-	# package {['uuid-php', 'php-pecl-memcache', 'php-pecl-xdebug', 'php-pecl-apc']:}
-	
+		
 	file { "/var/www/html/phpinfo.php":
 		owner   => "root",
 		group   => "root",
@@ -230,52 +240,6 @@ class install_php {
 		]
 	}
 	
-	#php::pear::module { 'phpqatools':
-	#	repository  => 'pear.phpqatools.org',
-	#	alldeps => 'true',
-	#	require => [
-	#		Exec['/usr/bin/pear upgrade pear'],
-	#		Php::Pear::Config['auto_discover'],
-	#		DiscoverPearChannel['pear.phpunit.de'],
-	#		DiscoverPearChannel['components.ez.no'],
-	#		DiscoverPearChannel['pear.symfony-project.com'],
-	#		DiscoverPearChannel['pear.symfony.com'],
-	#		DiscoverPearChannel['pear.phpqatools.org']
-	#	]
-	#}
-	
-	
-	# Extensoes PEAR
-	#exec { 'install_xdebug':
-	#	command => '/usr/bin/pecl install --alldeps xdebug',
-	#	#unless => 'pear list -a | grep xdebug',
-	#	require => [
-	#		Exec['/usr/bin/pear upgrade pear'],
-	#		Php::Pear::Config['auto_discover'],
-	#		DiscoverPearChannel['pecl.php.net']
-	#	]
-	#}
-	
-	#php::pear::module {['xdebug']: 
-	#	require => [
-	#		Exec['/usr/bin/pear upgrade pear'],
-	#		Php::Pear::Config['auto_discover'],
-	#		DiscoverPearChannel['pear.phpunit.de'],
-	#		DiscoverPearChannel['components.ez.no'],
-	#		DiscoverPearChannel['pear.symfony-project.com'],
-	#		DiscoverPearChannel['pear.symfony.com'],
-	#		DiscoverPearChannel['pear.phpqatools.org']
-	#	]
-	#}
-	
-	#php::pecl::module { "xdebug": 
-	#	require => [
-	#		Exec['/usr/bin/pear upgrade pear'],
-	#		Php::Pear::Config['auto_discover'],
-	#		DiscoverPearChannel['pecl.php.net']
-	#	]	
-	#}
-	
 	# Xdebug
 	file { '/etc/php.d/xdebug.ini':
 		source => '/vagrant/files/xdebug.ini',
@@ -283,6 +247,43 @@ class install_php {
 		require => Package['php-pecl-xdebug']
 	}
 	
+}
+
+class install_mysql {
+	class { 'mysql': root_password => '123456'}
+	
+	#mysql::grant { 'default_db':
+	#	mysql_privileges     => 'ALL',
+	#	mysql_db             => $mysql_db,
+	#	mysql_user           => $mysql_user,
+	#	mysql_password       => $mysql_pass,
+	#	mysql_host           => $mysql_host,
+	#	mysql_grant_filepath => '/home/vagrant/puppet-mysql',
+	# }
+
+	# package {'phpmyadmin': require => Class['mysql']}
+	
+	#apache::vhost { 'phpmyadmin':
+	#	server_name => false,
+	#	docroot     => '/usr/share/phpmyadmin',
+	#	port        => $pma_port,
+	#	priority    => '10',
+	#	require     => Package['phpmyadmin'],
+	#	template    => 'vagrantee/apache/vhost.conf.erb',
+	# }
+	
+	#file { "/etc/httpd/conf.d/phpMyAdmin.conf":
+	#	replace => true,
+	#	ensure  => present,
+	#	source  => "/vagrant/files/httpd/conf.d/phpMyAdmin.conf",
+	#}
+
+	#file { "/etc/phpMyAdmin/config.inc.php":
+	#	replace => true,
+	#	ensure  => present,
+	#	source  => "/vagrant/files/phpmy_admin_config.inc.php",
+	#	require => Package["phpMyAdmin"]
+	#}
 }
 
 # Força a execução do cntlm antes de todos as outras tarefas
