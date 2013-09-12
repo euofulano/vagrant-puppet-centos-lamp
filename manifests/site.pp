@@ -17,7 +17,7 @@ class proxy {
 	$proxy_no_proxy = 'localhost, 127.0.0.*, 10.*, 192.168.*, *.dasa.com.br, *.dasa.net, 172.*'
 	$proxy_listen = '3128'	
 	$proxys = ["proxy=http://${proxy_url}:${proxy_port}","proxy=ftp://${proxy_url}:${proxy_port}","proxy=https://${proxy_url}:${proxy_port}"]	
-	$config_proxys = ['yum.conf', 'profile', 'wgetrc']
+	$config_proxys = ['yum.conf', 'wgetrc']
 
 	define applyproxy() {
 		file {$name:
@@ -57,11 +57,6 @@ class proxy {
 	
 	file { "/etc/profile.d/env_proxy.sh":
 		content => "export http_proxy=http://${proxy_url}:${proxy_port} https_proxy=http://${proxy_url}:${proxy_port} ftp_proxy=http://${proxy_url}:${proxy_port} HTTP_PROXY_REQUEST_FULLURI=0 HTTPS_PROXY_REQUEST_FULLURI=0"
-	}
-	
-	exec { 'foo':
-		environment => ["FOO=bar"],
-		command => '/bin/echo $FOO > /tmp/bar'
 	}
 }
 
@@ -128,6 +123,7 @@ class setup {
 	}
 	
 	include sendmail
+	include iptables
 }
 
 class install_apache {
@@ -290,9 +286,6 @@ class install_mysql {
 class {'proxy': stage => setup }
 
 include setup
-include install_apache
-include install_php
 
-
-
-
+class { 'install_apache' : require => Class['setup']}
+class { 'install_php' : require => Class['setup']}
