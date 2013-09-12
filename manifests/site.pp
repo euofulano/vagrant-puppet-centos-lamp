@@ -1,3 +1,9 @@
+# https://github.com/puphpet/vagrant-puppet-lamp
+# https://github.com/vagrantee/vagrantee
+# https://github.com/miccheng/vagrant-lamp-centos63
+# https://github.com/iJoyCode/vagrant-puppet-centos-php-apache
+# https://github.com/pipe-devnull/vagrant-dev-lamp
+
 stage { setup: before => Stage[main] }
 
 Exec {
@@ -193,7 +199,8 @@ class install_php {
 			'set PHP/display_errors On',
 			'set PHP/display_startup_errors On',
 			'set PHP/html_errors On',
-			'set Date/date.timezone America/Sao_Paulo',
+			'set PHP/short_open_tag On',
+			'set Date/date.timezone America/Sao_Paulo'
 		],
 		require => Package['php'],
 		notify  => Service['httpd']
