@@ -139,6 +139,11 @@ class install_apache {
 	  content => 'EnableSendfile Off',
 	}
 	
+	#apache::vhost { 'apoio.alvaro.dev':
+	#	source      => '/vagrant/files/apoio.alvaro.dev.conf',
+	#	template    => ''
+	#}
+	
 }
 
 class install_php {
