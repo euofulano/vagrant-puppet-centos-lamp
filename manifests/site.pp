@@ -113,7 +113,7 @@ class setup {
 	exec { 'yum-update':
 		command => '/usr/bin/yum -y update',
 		require => Class["epel"],
-		timeout => 60,
+		timeout => 600,
 		tries   => 3
 	}
 	
@@ -123,7 +123,7 @@ class setup {
 		require => Exec['yum-update']
 	}
 	
-	package {['vim-enhanced', 'vim-common', 'vim-minimal', 'telnet','zip','unzip','git','nodejs','npm','upstart', 'zlib-devel', 'lynx']:
+	package {['vim-enhanced', 'vim-common', 'vim-minimal', 'telnet','zip','unzip','git','nodejs','npm','upstart', 'zlib-devel', 'lynx', 'ftp']:
 		ensure => latest,
 		require => Exec['yum-update']
 	}
@@ -164,7 +164,7 @@ class install_php {
 			'mbstring',
 			'mcrypt',
 			'mssql',
-			'mysql',
+			'mysqlnd',
 			'pdo',
 			'pgsql',
 			'process',
@@ -174,11 +174,20 @@ class install_php {
 			'soap',
 			'xml',
 			'xmlrpc',
+			'pecl-mysqlnd-ms',
+			'pecl-mysqlnd-qc',
+			'pecl-pthreads',
+			'pecl-rar',
+			'pecl-solr',
+			'pecl-sphinx',
+			'pecl-uploadprogress',
+			'pecl-uuid',
+			'pecl-zendopcache',
 			'pecl-memcache',
 			'pecl-xdebug',
 			'pecl-apc',
 			'pecl-imagick',
-			'pecl-xhprof'
+			'pecl-xhprof'		
 		]:
 	}
 		
